@@ -1,11 +1,9 @@
 Flask
 opencv-python-headless
-qrcode
+qrcode[pil]
 pymongo
-mediapipe
 scipy
 numpy
-face-recognition
 Werkzeug
 Pillow
 gunicorn
