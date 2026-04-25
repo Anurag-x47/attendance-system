@@ -3,7 +3,7 @@ import cv2
 import os
 import qrcode
 import database as db
-from face_recognition_module import FaceAI
+from face_engine import FaceAI
 from datetime import datetime
 from functools import wraps
 

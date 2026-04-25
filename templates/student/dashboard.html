@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance Portal{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;" class="animate-in">
+    <div>
+        <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+            <div style="width: 120px; height: 120px; border-radius: 50%; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; border: 4px solid var(--primary);">
+                <span style="font-size: 2rem; font-weight: 800; color: var(--primary);">{{ percentage }}%</span>
+            </div>
+            <h3 style="margin-bottom: 0.5rem;">Overall Attendance</h3>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Based on last 30 sessions</p>
+            
+            <div style="margin-top: 2rem; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.8rem;">Target Achievement</span>
+                    <span style="font-size: 0.8rem;">75% required</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--bg-dark); border-radius: 4px; overflow: hidden;">
+                    <div style="width: {{ percentage }}%; height: 100%; background: var(--primary);"></div>
+                </div>
+            </div>
+        </div>
+<div class="stats-grid">
+    <div class="card" style="display: flex; align-items: center; gap: 2rem;">
+        <div style="position: relative; width: 100px; height: 100px;">
+            <svg style="transform: rotate(-90deg); width: 100px; height: 100px;">
+                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="var(--primary)" stroke-width="8" fill="transparent" 
+                        stroke-dasharray="251.2" stroke-dashoffset="{{ 251.2 * (1 - percentage/100) }}" 
+                        style="transition: stroke-dashoffset 1s ease-out;" />
+            </svg>
+            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">
+                {{ percentage }}%
+            </div>
+        </div>
+        <div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Overall Attendance</p>
+            <h2 style="font-size: 1.8rem; font-weight: 800;">Academic Score</h2>
+        </div>
+    </div>
+    
+    <div class="card" style="background: linear-gradient(135deg, var(--secondary), var(--primary)); border: none; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Ready to mark?</p>
+            <h2 style="font-size: 1.5rem; margin: 0.25rem 0; font-weight: 800; color: white;">AI Verification</h2>
+        </div>
+        <a href="{{ url_for('attendance_page') }}" class="btn" style="background: white; color: var(--primary); padding: 1rem 1.5rem;">
+            <i class="fas fa-camera"></i> Launch
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.4rem; font-weight: 800;">Attendance History</h3>
+        <button class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.8rem;">
+            <i class="fas fa-calendar-days"></i> Last 30 Days
+        </button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Timestamp</th>
+                    <th>Confidence</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in history %}
+                <tr>
+                    <td style="font-weight: 700;">{{ log.date }}</td>
+                    <td style="color: var(--text-muted);">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 60px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+                                <div style="width: {{ log.confidence }}%; height: 100%; background: var(--primary);"></div>
+                            </div>
+                            <span style="font-size: 0.8rem; font-weight: 600;">{{ log.confidence }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-success">
+                            <i class="fas fa-circle-check"></i> {{ log.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not history %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                        <i class="fas fa-clock-rotate-left" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        No attendance records found yet.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

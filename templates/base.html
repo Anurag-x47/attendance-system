@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StuAttend AI | Next-Gen Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3589/3589030.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">S</div>
+                <h2 style="font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px;">StuAttend <span style="color: var(--primary);">AI</span></h2>
+            </div>
+            
+            <nav class="nav-menu">
+                {% if session.get('role') == 'student' %}
+                <li class="nav-item">
+                    <a href="{{ url_for('student_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'student_dashboard' }}">
+                        <i class="fas fa-grid-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('attendance_page') }}" class="nav-link {{ 'active' if request.endpoint == 'attendance_page' }}">
+                        <i class="fas fa-face-viewfinder"></i>
+                        <span>AI Attendance</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('qr_scanner') }}" class="nav-link {{ 'active' if request.endpoint == 'qr_scanner' }}">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Scanner</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if session.get('role') == 'admin' %}
+                <li class="nav-item">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+                        <i class="fas fa-users-gear"></i>
+                        <span>Students</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('admin_qrs') }}" class="nav-link {{ 'active' if request.endpoint == 'admin_qrs' }}">
+                        <i class="fas fa-qr-code"></i>
+                        <span>Identity QRs</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="nav-item" style="margin-top: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+            </nav>
+
+            <div class="theme-toggle-container">
+                <button class="btn theme-btn" id="theme-btn">
+                    <i class="fas fa-moon"></i>
+                    <span>Night Mode</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;" class="animate-up">
+                <div>
+                    <h1 style="font-size: 2.2rem; font-weight: 800; letter-spacing: -1px;">{% block title %}Dashboard{% endblock %}</h1>
+                    <p style="color: var(--text-muted); font-weight: 500;">Intelligence for {{ session.get('user', 'Administrator') }}</p>
+                </div>
+                <div style="display: flex; gap: 1.5rem; align-items: center;">
+                    <div style="text-align: right; background: var(--card-bg); padding: 0.5rem 1.25rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--primary);">{{ datetime }}</p>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn" style="background: rgba(244, 63, 94, 0.1); color: var(--error); border: 1px solid rgba(244, 63, 94, 0.2); width: 50px; padding: 0;">
+                        <i class="fas fa-power-off"></i>
+                    </a>
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="card animate-up" style="margin-bottom: 2rem; padding: 1.25rem; border-left: 4px solid var(--{{ 'success' if category == 'success' else 'error' }}); display: flex; align-items: center; gap: 1rem;">
+                    <i class="fas fa-{{ 'circle-check' if category == 'success' else 'circle-exclamation' }}" style="color: var(--{{ 'success' if category == 'success' else 'error' }}); font-size: 1.2rem;"></i>
+                    <span style="font-weight: 600;">{{ message }}</span>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="animate-up" style="animation-delay: 0.1s;">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const themeBtn = document.getElementById('theme-btn');
+        const html = document.documentElement;
+        
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', nextTheme);
+            themeBtn.querySelector('i').className = nextTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+            themeBtn.querySelector('span').textContent = nextTheme === 'dark' ? 'Night Mode' : 'Light Mode';
+        });
+    </script>
+</body>
+</html>

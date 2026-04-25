@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}AI Bio-Verification{% endblock %}
+
+{% block content %}
+<div class="animate-up" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <div class="card" style="padding: 3rem;">
+        <div style="margin-bottom: 2.5rem;">
+            <h2 id="stage-title" style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">Initializing Neural Engine...</h2>
+            <p id="stage-instruction" style="color: var(--text-muted); font-weight: 500;">Establishing secure biometric link</p>
+        </div>
+        
+        <div class="video-wrapper">
+            <div class="video-container">
+                <img src="{{ url_for('video_feed') }}" id="video-feed" style="width: 100%; transform: scaleX(-1);">
+                
+                <!-- Scanning Overlay -->
+                <div id="scanner" style="position: absolute; inset: 0; pointer-events: none;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(to right, transparent, var(--primary), transparent); box-shadow: 0 0 20px var(--primary); animation: scanLoop 4s ease-in-out infinite;"></div>
+                    <div style="position: absolute; inset: 0; background: radial-gradient(circle, transparent 40%, rgba(124, 58, 237, 0.05) 100%);"></div>
+                </div>
+
+                <!-- Liveness Indicators -->
+                <div class="liveness-indicator">
+                    <div id="blink-chip" class="indicator-pill">
+                        <i class="fas fa-eye"></i>
+                        <span>Eye Blink</span>
+                    </div>
+                    <div id="head-chip" class="indicator-pill">
+                        <i class="fas fa-arrows-to-eye"></i>
+                        <span>3D Depth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-card" class="card" style="margin-top: 3rem; display: none; background: rgba(16, 185, 129, 0.05); border-color: var(--success); transform: scale(1.05);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--success); margin-bottom: 0.5rem;">
+                <i class="fas fa-circle-check" style="font-size: 1.5rem;"></i>
+                <h3 id="result-name" style="font-size: 1.4rem; font-weight: 800;">Identity Confirmed</h3>
+            </div>
+            <p id="result-id" style="font-weight: 600; opacity: 0.8;"></p>
+        </div>
+
+        <div id="unknown-alert" class="card" style="margin-top: 3rem; display: none; background: rgba(244, 63, 94, 0.05); border-color: var(--error);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--error);">
+                <i class="fas fa-shield-xmark" style="font-size: 1.5rem;"></i>
+                <h3 style="font-size: 1.4rem; font-weight: 800;">Verification Failed</h3>
+            </div>
+            <p style="font-weight: 600; opacity: 0.8;">Unrecognized biometric data. Security protocol engaged.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scanLoop {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+.indicator-pill i { font-size: 0.9rem; }
+.pill-active { 
+    background: var(--success) !important; 
+    border-color: rgba(255,255,255,0.4) !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+</style>
+
+<script>
+let blinkVerified = false;
+let headVerified = false;
+let identifiedStudent = null;
+let currentConfidence = 0;
+
+const stageTitle = document.getElementById('stage-title');
+const stageInst = document.getElementById('stage-instruction');
+const blinkChip = document.getElementById('blink-chip');
+const headChip = document.getElementById('head-chip');
+const resultCard = document.getElementById('result-card');
+const unknownAlert = document.getElementById('unknown-alert');
+
+async function checkSystem() {
+    if (identifiedStudent && blinkVerified && headVerified) return;
+
+    try {
+        const res = await fetch('/process_frame', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.blink && !blinkVerified) {
+            blinkVerified = true;
+            blinkChip.classList.add('pill-active');
+            blinkChip.querySelector('i').className = "fas fa-check";
+            playPing();
+        }
+
+        if (data.head && !headVerified) {
+            headVerified = true;
+            headChip.classList.add('pill-active');
+            headChip.querySelector('i').className = "fas fa-check";
+            playPing();
+        }
+
+        if (data.student_id) {
+            identifiedStudent = data.student_id;
+            currentConfidence = data.confidence;
+        }
+
+        updateUI();
+        
+        if (blinkVerified && headVerified && identifiedStudent) {
+            completeAttendance();
+        } else {
+            setTimeout(checkSystem, 600);
+        }
+    } catch (e) { 
+        console.error(e);
+        setTimeout(checkSystem, 1000);
+    }
+}
+
+function updateUI() {
+    if (!blinkVerified) {
+        stageTitle.innerText = "Liveness Check";
+        stageInst.innerText = "Natural eye blink required for vitality verification";
+    } else if (!headVerified) {
+        stageTitle.innerText = "Spatial Mapping";
+        stageInst.innerText = "Rotate head slightly to confirm 3D volume";
+    } else {
+        stageTitle.innerText = "Neural Matching";
+        stageInst.innerText = "Comparing biometric template with database...";
+    }
+}
+
+async function completeAttendance() {
+    stageTitle.innerText = "Biometrics Verified";
+    stageInst.innerText = "Encrypting and transmitting audit log...";
+    
+    try {
+        const res = await fetch('/mark_success', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ student_id: identifiedStudent, confidence: currentConfidence })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            resultCard.style.display = 'block';
+            document.getElementById('result-id').innerText = "UID: " + identifiedStudent + " | MATCH: " + Math.round(currentConfidence) + "%";
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
+            setTimeout(() => { window.location.href = "{{ url_for('student_dashboard') }}"; }, 3500);
+        } else {
+            stageTitle.innerText = "Authentication Error";
+            stageInst.innerText = data.message;
+        }
+    } catch (e) {
+        stageTitle.innerText = "Network Error";
+        stageInst.innerText = "Connection lost during transmission";
+    }
+}
+
+function playPing() {
+    new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3').play().catch(()=>{});
+}
+
+// Start sequence
+setTimeout(checkSystem, 1500);
+</script>
+{% endblock %}

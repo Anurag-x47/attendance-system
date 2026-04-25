@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Control Center{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="card">
+        <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Registered Students</p>
+        <h2 class="stat-value">{{ stats.total_students }}</h2>
+        <p style="color: var(--secondary); font-size: 0.85rem; font-weight: 600;"><i class="fas fa-users"></i> Global Database</p>
+    </div>
+    <div class="card">
+        <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Present Today</p>
+        <h2 class="stat-value" style="background: linear-gradient(to right, #fff, var(--success)); -webkit-background-clip: text;">{{ stats.present_today }}</h2>
+        <p style="color: var(--success); font-size: 0.85rem; font-weight: 600;"><i class="fas fa-circle-check"></i> {{ stats.attendance_rate }}% Accuracy</p>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none;">
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Management</p>
+        <h2 style="font-size: 1.5rem; margin: 1rem 0; font-weight: 800; color: white;">Quick Actions</h2>
+        <button class="btn" style="background: white; color: var(--primary); width: 100%;" onclick="document.getElementById('addModal').style.display='flex'">
+            <i class="fas fa-plus"></i> Add Student
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.4rem; font-weight: 800;">Student Registry</h3>
+        <div style="position: relative; width: 300px;">
+            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+            <input type="text" placeholder="Search registry..." style="padding-left: 3rem; font-size: 0.9rem;">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Identifier</th>
+                    <th>Full Name</th>
+                    <th>Group / Class</th>
+                    <th>Operations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td><span class="badge" style="background: rgba(124, 58, 237, 0.1); color: var(--primary); font-family: monospace; font-size: 0.9rem;">{{ s.student_id }}</span></td>
+                    <td style="font-weight: 600;">{{ s.name }}</td>
+                    <td><span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">{{ s.class }}</span></td>
+                    <td>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <a href="{{ url_for('register_face', s_id=s.student_id) }}" class="btn btn-primary" style="padding: 0.6rem 1rem; font-size: 0.8rem; border-radius: 12px;">
+                                <i class="fas fa-face-viewfinder"></i> Train
+                            </a>
+                            <a href="{{ url_for('delete_student', s_id=s.student_id) }}" class="btn" style="padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--error); background: rgba(244, 63, 94, 0.05); border-radius: 12px;">
+                                <i class="fas fa-trash-can"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(12px);">
+    <div class="card" style="width: 480px; padding: 3rem;">
+        <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">New Student</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2.5rem;">Register a new student identity into the AI system.</p>
+        
+        <form action="{{ url_for('add_student') }}" method="POST">
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Student ID</label>
+                <input type="text" name="student_id" placeholder="e.g. STU101" required>
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Full Name</label>
+                <input type="text" name="name" placeholder="Enter name" required>
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Class / Group</label>
+                <input type="text" name="class" placeholder="e.g. CS-Final" required>
+            </div>
+            <div style="margin-bottom: 2.5rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Access Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 2;">Initialize Identity</button>
+                <button type="button" class="btn" onclick="document.getElementById('addModal').style.display='none'" style="flex: 1; background: rgba(255,255,255,0.05);">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

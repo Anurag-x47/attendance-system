@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login | StuAttend AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+    <div class="card animate-up" style="width:100%; max-width:440px; padding:3.5rem 2.5rem; text-align:center;">
+        <div class="brand-icon" style="margin: 0 auto 1.5rem; width: 60px; height: 60px; font-size: 1.8rem;">S</div>
+        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem;">Student Portal</h2>
+        <p style="color: var(--text-muted); font-weight: 500; margin-bottom: 3rem;">Enter your credentials to access your dashboard.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="badge badge-error" style="width: 100%; justify-content: center; padding: 1rem; margin-bottom: 2rem; border-radius: 12px;">
+                <i class="fas fa-circle-exclamation"></i> {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('student_login') }}" method="POST">
+            <div style="text-align: left; margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Student Identity</label>
+                <input type="text" name="student_id" placeholder="e.g. STU1234" required>
+            </div>
+            <div style="text-align: left; margin-bottom: 2.5rem;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Access Key</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.25rem;">
+                Authorize Login <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Management team? <a href="{{ url_for('admin_login') }}" style="color: var(--primary); text-decoration: none; font-weight: 700;">Admin Access</a></p>
+        </div>
+    </div>
+</body>
+</html>

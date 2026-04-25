@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Secure QR Entry{% endblock %}
+
+{% block content %}
+<div class="animate-up" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <div class="card" style="padding: 3rem;">
+        <div style="margin-bottom: 2.5rem;">
+            <h2 id="stage-title" style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">Optical Registry</h2>
+            <p id="stage-instruction" style="color: var(--text-muted); font-weight: 500;">Present your digital identity token (QR) to the sensor</p>
+        </div>
+        
+        <div class="video-wrapper">
+            <div class="video-container" style="background: #000; min-height: 450px;">
+                <div id="reader" style="width: 100%;"></div>
+                
+                <!-- Custom Scanning Overlay -->
+                <div id="scanner-overlay" style="position: absolute; inset: 0; pointer-events: none; z-index: 10;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(to right, transparent, var(--secondary), transparent); box-shadow: 0 0 20px var(--secondary); animation: scanLoop 4s ease-in-out infinite;"></div>
+                    <!-- Frame corners -->
+                    <div style="position: absolute; top: 20%; left: 20%; width: 40px; height: 40px; border-top: 4px solid var(--secondary); border-left: 4px solid var(--secondary); border-radius: 8px 0 0 0;"></div>
+                    <div style="position: absolute; top: 20%; right: 20%; width: 40px; height: 40px; border-top: 4px solid var(--secondary); border-right: 4px solid var(--secondary); border-radius: 0 8px 0 0;"></div>
+                    <div style="position: absolute; bottom: 20%; left: 20%; width: 40px; height: 40px; border-bottom: 4px solid var(--secondary); border-left: 4px solid var(--secondary); border-radius: 0 0 0 8px;"></div>
+                    <div style="position: absolute; bottom: 20%; right: 20%; width: 40px; height: 40px; border-bottom: 4px solid var(--secondary); border-right: 4px solid var(--secondary); border-radius: 0 0 8px 0;"></div>
+                </div>
+                
+                <!-- Indicators -->
+                <div class="liveness-indicator" style="z-index: 11;">
+                    <div id="qr-chip" class="indicator-pill" style="border-color: var(--secondary); color: var(--secondary);">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Ready for Scan</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-card" class="card animate-up" style="margin-top: 3rem; display: none; background: rgba(16, 185, 129, 0.05); border-color: var(--success); transform: scale(1.05);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--success); margin-bottom: 0.5rem;">
+                <i class="fas fa-circle-check" style="font-size: 1.5rem;"></i>
+                <h3 id="result-name" style="font-size: 1.4rem; font-weight: 800;">Log Successful</h3>
+            </div>
+            <p id="result-id" style="font-weight: 600; opacity: 0.8;"></p>
+        </div>
+
+        <div id="error-card" class="card" style="margin-top: 3rem; display: none; background: rgba(244, 63, 94, 0.05); border-color: var(--error);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--error);">
+                <i class="fas fa-circle-exclamation" style="font-size: 1.5rem;"></i>
+                <h3 id="error-msg" style="font-size: 1.4rem; font-weight: 800;">Invalid Token</h3>
+            </div>
+            <p style="font-weight: 600; opacity: 0.8;">The scanned QR sequence does not match any registered identity.</p>
+        </div>
+
+        <div style="margin-top: 2.5rem;">
+            <a href="{{ url_for('admin_dashboard' if session.get('role') == 'admin' else 'student_dashboard') }}" class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                <i class="fas fa-arrow-left"></i> Return to Safety
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scanLoop {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+#reader { border: none !important; }
+#reader video { 
+    border-radius: 24px !important; 
+    object-fit: cover !important;
+}
+
+#reader__dashboard_section_csr button {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    margin: 1rem 0 !important;
+    box-shadow: 0 4px 12px var(--primary-glow) !important;
+}
+
+#reader__status_span { display: none !important; }
+#reader__camera_selection {
+    padding: 0.75rem !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.05) !important;
+    color: white !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+.pill-active { 
+    background: var(--success) !important; 
+    color: white !important;
+    border-color: rgba(255,255,255,0.4) !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+</style>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+let scanning = true;
+const qrChip = document.getElementById('qr-chip');
+const resCard = document.getElementById('result-card');
+const errCard = document.getElementById('error-card');
+const stageTitle = document.getElementById('stage-title');
+
+function onScanSuccess(decodedText, decodedResult) {
+    if (!scanning) return;
+    scanning = false;
+    
+    qrChip.classList.add('pill-active');
+    qrChip.querySelector('span').innerText = "TOKEN DETECTED";
+    qrChip.querySelector('i').className = "fas fa-check";
+    stageTitle.innerText = "Processing Optical Data...";
+    
+    fetch('/process_qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: decodedText })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            resCard.style.display = 'block';
+            errCard.style.display = 'none';
+            document.getElementById('result-id').innerText = "ID: " + decodedText + " | Status: Verified";
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
+            
+            setTimeout(() => { 
+                window.location.href = "{{ url_for('admin_dashboard' if session.get('role') == 'admin' else 'student_dashboard') }}"; 
+            }, 3000);
+        } else {
+            document.getElementById('error-msg').innerText = data.message;
+            errCard.style.display = 'block';
+            resCard.style.display = 'none';
+            
+            setTimeout(() => { 
+                scanning = true; 
+                errCard.style.display = 'none'; 
+                qrChip.classList.remove('pill-active');
+                qrChip.querySelector('span').innerText = "Ready for Scan";
+                qrChip.querySelector('i').className = "fas fa-qrcode";
+                stageTitle.innerText = "Optical Registry";
+            }, 3000);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        scanning = true;
+    });
+}
+
+function onScanFailure(error) {}
+
+let html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader", { 
+        fps: 25, 
+        qrbox: {width: 250, height: 250},
+        aspectRatio: 1.333334
+    });
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+{% endblock %}
