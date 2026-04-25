@@ -1,6 +1,6 @@
 Flask
 opencv-python-headless
-qrcode[pil]
+qrcode
 pymongo
 mediapipe
 scipy

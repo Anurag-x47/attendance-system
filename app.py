@@ -7,6 +7,11 @@ from face_engine import FaceAI
 from datetime import datetime
 from functools import wraps
 
+try:
+    import cv2
+except:
+    cv2 = None
+
 app = Flask(__name__)
 app.secret_key = "attendance_secret_key"
 face_ai = FaceAI()
