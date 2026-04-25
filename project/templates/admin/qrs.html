@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Student QR Management{% endblock %}
+
+{% block content %}
+<div class="card animate-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h3>All Registered QRs</h3>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Download and distribute QRs for physical scanning</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+        {% for s in students %}
+        <div class="card" style="background: var(--bg-dark); border: 1px solid var(--border); text-align: center;">
+            <div style="padding: 1rem; background: white; border-radius: 12px; display: inline-block; margin-bottom: 1rem;">
+                <img src="{{ url_for('static', filename=s.qr_code_path) if s.qr_code_path else '#' }}" alt="QR Code" style="width: 150px; height: 150px;">
+            </div>
+            <h4 style="margin-bottom: 0.25rem;">{{ s.name }}</h4>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1.5rem;">ID: {{ s.student_id }}</p>
+            
+            <a href="{{ url_for('static', filename=s.qr_code_path) if s.qr_code_path else '#' }}" download="{{ s.student_id }}_QR.png" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-download"></i> Download QR
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

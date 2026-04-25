@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance AI System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand animate-in">
+                <div class="brand-icon">S</div>
+                <h2 style="font-weight: 700; font-size: 1.25rem;">StuAttend AI</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                {% if session.get('role') != 'admin' %}
+                <li class="nav-item animate-in">
+                    <a href="{{ url_for('student_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'student_dashboard' }}">
+                        <i class="fas fa-th-large"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item animate-in">
+                    <a href="{{ url_for('attendance_page') }}" class="nav-link {{ 'active' if request.endpoint == 'attendance_page' }}">
+                        <i class="fas fa-camera"></i>
+                        Mark Attendance
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if session.get('role') == 'admin' %}
+                <li class="nav-item animate-in">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+                        <i class="fas fa-user-plus"></i>
+                        Manage Students
+                    </a>
+                </li>
+                <li class="nav-item animate-in">
+                    <a href="{{ url_for('admin_qrs') }}" class="nav-link {{ 'active' if request.endpoint == 'admin_qrs' }}">
+                        <i class="fas fa-qrcode"></i>
+                        stu.QRs
+                    </a>
+                </li>
+                {% endif %}
+                {% if session.get('role') != 'admin' %}
+                <li class="nav-item">
+                    <a href="{{ url_for('qr_scanner') }}" class="nav-link {{ 'active' if request.endpoint == 'qr_scanner' }}">
+                        <i class="fas fa-expand"></i>
+                        QR Scanner
+                    </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        Export Reports
+                    </a>
+                </li>
+            </nav>
+
+            <div class="theme-toggle">
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;" id="theme-btn">
+                    <i class="fas fa-moon"></i>
+                    <span>Toggle Theme</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1 style="font-size: 1.8rem; font-weight: 700;">{% block title %}Dashboard{% endblock %}</h1>
+                    <p style="color: var(--text-muted);">Welcome back, {{ session.get('user', 'Admin') }}</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="text-align: right;">
+                        <p style="font-weight: 600;">{{ datetime }}</p>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn" style="background: var(--card-dark); color: var(--error);">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="card animate-in" style="margin-bottom: 1rem; border-left: 4px solid var(--{{ 'success' if category == 'success' else 'error' }});">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        const themeBtn = document.getElementById('theme-btn');
+        const html = document.documentElement;
+        
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', nextTheme);
+            themeBtn.querySelector('i').className = nextTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+        });
+    </script>
+</body>
+</html>

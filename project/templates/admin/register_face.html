@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Register Face: {{ student_id }}{% endblock %}
+
+{% block content %}
+<div class="animate-in" style="max-width: 800px; margin: 0 auto; text-align: center;">
+    <div class="card glass-card">
+        <h2 style="margin-bottom: 1rem;">Capture Facial Data</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Move your head slowly while we capture 5 samples for better accuracy.</p>
+        
+        <div class="video-container">
+            <img src="{{ url_for('video_feed') }}" id="video-feed" alt="Webcam Feed">
+            <div id="progress-bar" style="position: absolute; bottom: 0; left: 0; height: 5px; background: var(--success); width: 0%; transition: width 0.3s;"></div>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+            <button id="start-btn" class="btn btn-primary" style="padding: 1rem 2.5rem;">
+                <i class="fas fa-camera"></i> Start Enrollment
+            </button>
+        </div>
+
+        <div id="status-card" class="card" style="margin-top: 1.5rem; display: none; padding: 1rem;">
+            <p id="status-text">Ready to scan...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const startBtn = document.getElementById('start-btn');
+const progress = document.getElementById('progress-bar');
+const statusCard = document.getElementById('status-card');
+const statusText = document.getElementById('status-text');
+
+startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    statusCard.style.display = 'block';
+    statusText.innerText = "Capturing 5 high-quality samples...";
+    
+    try {
+        const response = await fetch('/capture_face', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ student_id: "{{ student_id }}" })
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            progress.style.width = "100%";
+            statusText.innerHTML = "✅ Enrolled Successfully! Redirecting...";
+            setTimeout(() => { window.location.href = "{{ url_for('admin_dashboard') }}"; }, 2000);
+        } else {
+            statusText.innerText = "❌ Error: " + data.message;
+            startBtn.disabled = false;
+        }
+    } catch (err) {
+        statusText.innerText = "❌ System Error. Check console.";
+        startBtn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

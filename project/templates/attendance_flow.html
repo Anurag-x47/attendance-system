@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}AI Secure Attendance{% endblock %}
+
+{% block content %}
+<div class="animate-in" style="max-width: 800px; margin: 0 auto; text-align: center;">
+    <div class="card glass-card">
+        <h2 id="stage-title">Detecting Presence...</h2>
+        <p id="stage-instruction" style="color: var(--text-muted); margin-bottom: 2rem;">Please look directly at the camera.</p>
+        
+        <div class="video-container">
+            <img src="{{ url_for('video_feed') }}" id="video-feed" style="width: 100%; transform: scaleX(-1);">
+            
+            <!-- Liveness Indicators -->
+            <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px;">
+                <div id="blink-chip" class="status-badge" style="background: rgba(255,255,255,0.1);">Blink</div>
+                <div id="head-chip" class="status-badge" style="background: rgba(255,255,255,0.1);">Head Move</div>
+            </div>
+            
+            <!-- Scanning Animation -->
+            <div id="scanner" style="position: absolute; top:0; left:0; width:100%; height:2px; background:var(--primary); box-shadow:0 0 15px var(--primary); animation: scanLine 3s linear infinite;"></div>
+        </div>
+
+        <div id="result-card" class="card" style="margin-top: 2rem; display: none;">
+            <h3 id="result-name" style="color: var(--success);">Recognized Student</h3>
+            <p id="result-id" style="font-size: 0.8rem; opacity: 0.7;"></p>
+        </div>
+
+        <div id="unknown-alert" class="card" style="margin-top: 2rem; display: none; background: rgba(239, 68, 68, 0.1); border-color: var(--error);">
+            <h3 style="color: var(--error);">Unknown Face Detected</h3>
+            <p>Access Denied. Fraudulent attempt logged.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes scanLine { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+.badge-active { background: var(--success) !important; color: white !important; box-shadow: 0 0 10px var(--success); }
+</style>
+
+<script>
+let blinkVerified = false;
+let headVerified = false;
+let identifiedStudent = null;
+let currentConfidence = 0;
+
+const stageTitle = document.getElementById('stage-title');
+const stageInst = document.getElementById('stage-instruction');
+const blinkChip = document.getElementById('blink-chip');
+const headChip = document.getElementById('head-chip');
+const resultCard = document.getElementById('result-card');
+const unknownAlert = document.getElementById('unknown-alert');
+
+// Polling for liveness and identification
+async function checkSystem() {
+    if (identifiedStudent && blinkVerified && headVerified) return;
+
+    try {
+        const res = await fetch('/process_frame', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.blink && !blinkVerified) {
+            blinkVerified = true;
+            blinkChip.classList.add('badge-active');
+            playPing();
+        }
+
+        if (data.head && !headVerified) {
+            headVerified = true;
+            headChip.classList.add('badge-active');
+            playPing();
+        }
+
+        if (data.student_id) {
+            identifiedStudent = data.student_id;
+            currentConfidence = data.confidence;
+        }
+
+        updateUI();
+        
+        if (blinkVerified && headVerified && identifiedStudent) {
+            completeAttendance();
+        } else {
+            setTimeout(checkSystem, 500);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function updateUI() {
+    if (!blinkVerified) {
+        stageTitle.innerText = "Step 1: Verify Vitality";
+        stageInst.innerText = "Please BLINK your eyes naturally.";
+    } else if (!headVerified) {
+        stageTitle.innerText = "Step 2: Verify 3D Presence";
+        stageInst.innerText = "Please turn your head slightly LEFT or RIGHT.";
+    } else {
+        stageTitle.innerText = "Step 3: Identification";
+        stageInst.innerText = "Finalizing identification...";
+    }
+}
+
+async function completeAttendance() {
+    stageTitle.innerText = "Verification Complete!";
+    stageInst.innerText = "Logging attendance to secure database...";
+    
+    const res = await fetch('/mark_success', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ student_id: identifiedStudent, confidence: currentConfidence })
+    });
+    const data = await res.json();
+
+    if (data.status === 'success') {
+        resultCard.style.display = 'block';
+        document.getElementById('result-name').innerText = "✅ Attendance Logged";
+        document.getElementById('result-id').innerText = "Student ID: " + identifiedStudent + " | Confidence: " + Math.round(currentConfidence) + "%";
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
+        setTimeout(() => { window.location.href = "{{ url_for('student_dashboard') }}"; }, 3000);
+    } else {
+        stageTitle.innerText = "System Alert";
+        stageInst.innerText = data.message;
+    }
+}
+
+function playPing() {
+    // Subtle UI sound
+    new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3').play().catch(()=>{});
+}
+
+// Start sequence
+setTimeout(checkSystem, 2000);
+</script>
+{% endblock %}

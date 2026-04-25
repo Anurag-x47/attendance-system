@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}QR Secure Attendance{% endblock %}
+
+{% block content %}
+<div class="animate-in" style="max-width: 800px; margin: 0 auto; text-align: center;">
+    <div class="card glass-card">
+        <h2 id="stage-title">QR Scanning Mode</h2>
+        <p id="stage-instruction" style="color: var(--text-muted); margin-bottom: 2rem;">Place the student QR code clearly in the viewport.</p>
+        
+        <div class="video-container" style="position: relative; border-color: var(--primary); background: #000; min-height: 400px;">
+            <div id="reader" style="width: 100%;"></div>
+            
+            <!-- Custom Scanning Overlay -->
+            <div id="scanner" style="position: absolute; top:0; left:0; width:100%; height:2px; background:var(--primary); box-shadow:0 0 15px var(--primary); animation: scanLine 3s linear infinite; z-index: 10;"></div>
+            
+            <!-- Indicators -->
+            <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 11;">
+                <div id="qr-chip" class="status-badge" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">QR LINKED</div>
+            </div>
+        </div>
+
+        <div id="result-card" class="card animate-in" style="margin-top: 2rem; display: none; background: rgba(34, 197, 94, 0.1); border-color: var(--success); border-width: 2px;">
+            <h3 style="color: var(--success);" id="result-name">✅ Attendance Marked Successfully</h3>
+            <p id="result-id" style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;"></p>
+        </div>
+
+        <div id="error-card" class="card" style="margin-top: 2rem; display: none; background: rgba(239, 68, 68, 0.1); border-color: var(--error);">
+            <h3 style="color: var(--error);" id="error-msg">Unknown QR Data</h3>
+            <p style="font-size: 0.8rem; opacity: 0.7;">This QR sequence is not recognized by the system.</p>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('admin_dashboard' if session.get('role') == 'admin' else 'student_dashboard') }}" class="btn" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border);">
+            <i class="fas fa-arrow-left"></i> Cancel and Return
+        </a>
+    </div>
+</div>
+
+<style>
+@keyframes scanLine { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+
+/* Customize html5-qrcode generated UI */
+#reader { border: none !important; }
+#reader video { 
+    border-radius: 20px !important; 
+    object-fit: cover !important;
+}
+#reader__dashboard_section_csr button {
+    background: var(--primary) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    margin: 10px 0 !important;
+}
+#reader__status_span { display: none !important; }
+#reader img[alt="Info icon"] { display: none !important; }
+#reader img[alt="Camera menu icon"] { display: none !important; }
+#reader__camera_selection {
+    padding: 0.5rem !important;
+    border-radius: 8px !important;
+    background: var(--card-dark) !important;
+    color: white !important;
+    border: 1px solid var(--border) !important;
+}
+</style>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+let scanning = true;
+const qrChip = document.getElementById('qr-chip');
+const resCard = document.getElementById('result-card');
+const errCard = document.getElementById('error-card');
+const stageTitle = document.getElementById('stage-title');
+
+function onScanSuccess(decodedText, decodedResult) {
+    if (!scanning) return;
+    scanning = false;
+    
+    // UI Feedback
+    qrChip.style.background = "var(--success)";
+    qrChip.innerText = "QR CAPTURED";
+    qrChip.classList.add('pulse-primary');
+    stageTitle.innerText = "Processing Scan...";
+    
+    fetch('/process_qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: decodedText })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            resCard.style.display = 'block';
+            errCard.style.display = 'none';
+            document.getElementById('result-id').innerText = "Student ID: " + decodedText;
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
+            
+            setTimeout(() => { 
+                window.location.href = "{{ url_for('admin_dashboard' if session.get('role') == 'admin' else 'student_dashboard') }}"; 
+            }, 3000);
+        } else {
+            document.getElementById('error-msg').innerText = data.message;
+            errCard.style.display = 'block';
+            resCard.style.display = 'none';
+            
+            // Reset after 3 seconds to allow re-scan
+            setTimeout(() => { 
+                scanning = true; 
+                errCard.style.display = 'none'; 
+                qrChip.style.background = "rgba(255,255,255,0.2)"; 
+                qrChip.innerText = "QR LINKED";
+                qrChip.classList.remove('pulse-primary');
+                stageTitle.innerText = "QR Scanning Mode";
+            }, 3000);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        scanning = true;
+    });
+}
+
+function onScanFailure(error) {
+    // Quietly continue
+}
+
+let html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader", { 
+        fps: 20, 
+        qrbox: {width: 250, height: 250},
+        aspectRatio: 1.333334
+    });
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+{% endblock %}
